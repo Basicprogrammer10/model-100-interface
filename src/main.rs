@@ -1,11 +1,7 @@
-use std::fs::{self, File};
+use std::fs;
 
-use bitvec::{
-    order::{Lsb0, Msb0},
-    slice::BitSlice,
-    vec::BitVec,
-};
-use hound::{self, WavReader, WavSpec, WavWriter};
+use bitvec::{array::BitArray, bitarr, order::Msb0, vec::BitVec};
+use hound::{self, WavReader};
 
 const CROSS_THRESHOLD: f32 = 0.1;
 const INT_CROSS_THRESHOLD: i32 = (CROSS_THRESHOLD * i16::MAX as f32) as i32;
@@ -55,37 +51,11 @@ fn main() {
         }
     }
 
-    {
-        let spec = WavSpec {
-            channels: 1,
-            bits_per_sample: 16,
-            ..spec
-        };
-        let mut debug = WavWriter::new(File::create("debug.wav").unwrap(), spec).unwrap();
-
-        let mut last = 0;
-        for i in intersections {
-            let gap = i - last - 1;
-            for _ in 0..gap {
-                debug.write_sample(0).unwrap();
-            }
-            last = i;
-
-            if (15..20).contains(&gap) {
-                debug.write_sample(i16::MAX).unwrap();
-            } else if (35..39).contains(&gap) {
-                debug.write_sample(i16::MIN).unwrap();
-            } else if (41..46).contains(&gap) {
-                debug.write_sample(i16::MAX / -2).unwrap();
-            } else if gap > 30000 {
-                debug.write_sample(i16::MAX / 2).unwrap();
-            } else {
-                panic!("Invalid pulse length: {}", gap);
-            }
-        }
-
-        debug.finalize().unwrap();
+    if !dat.is_empty() {
+        sections.push(dat);
     }
+
+    println!("[I] Found {} sections", sections.len());
 
     let mut raw_sections = Vec::new();
     let mut dat = BitVec::<u8, Msb0>::new();
@@ -100,13 +70,9 @@ fn main() {
             }
 
             // If data equals [0, 1, 1, 1, 1, 1, 1, 1] then active = true
-            if !active
-                && dat.len() >= 8
-                && byte_eq(
-                    &dat[dat.len() - 8..],
-                    &[false, true, true, true, true, true, true, true],
-                )
-            {
+            const START_SEQUENCE: BitArray<[u8; 1], Msb0> =
+                bitarr![const u8, Msb0; 0, 1, 1, 1, 1, 1, 1, 1];
+            if !active && dat.len() >= 8 && &dat[dat.len() - 8..] == &START_SEQUENCE {
                 active = true;
                 dat.clear();
             }
@@ -120,19 +86,4 @@ fn main() {
     for (i, section) in raw_sections.iter().enumerate() {
         fs::write(format!("out/section-{i}.bin"), section.as_raw_slice()).unwrap();
     }
-}
-
-fn byte_eq(a: &BitSlice<u8, Msb0>, b: &[bool]) -> bool {
-    if a.len() != b.len() {
-        panic!("Length mismatch");
-        return false;
-    }
-
-    for (a, b) in a.iter().zip(b.iter()) {
-        if a != b {
-            return false;
-        }
-    }
-
-    true
 }

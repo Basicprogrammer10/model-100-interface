@@ -15,7 +15,7 @@ pub fn decode(args: Decode) -> Result<()> {
         args.format
     );
 
-    let mut reader = hound::WavReader::open(&args.input)?;
+    let reader = hound::WavReader::open(&args.input)?;
     println!(
         "[I] {} channel{}, {} Hz, {} bit{}",
         reader.spec().channels,
@@ -25,8 +25,14 @@ pub fn decode(args: Decode) -> Result<()> {
         plural(reader.spec().bits_per_sample)
     );
 
+    let spec = reader.spec().into();
+    let samples = reader
+        .into_samples()
+        .collect::<Result<Vec<i32>, hound::Error>>()?;
+    println!("[I] {} samples", samples.len());
+
     match args.format {
-        args::Format::Raw => raw::decode(&mut reader, args)?,
+        args::Format::Raw => raw::decode(&samples, spec, args)?,
         args::Format::Text => unimplemented!(),
     }
 

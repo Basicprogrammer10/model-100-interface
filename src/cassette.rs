@@ -1,8 +1,7 @@
-use std::{fs::File, io::BufReader, ops::Range};
+use std::ops::Range;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use bitvec::{order::Msb0, vec::BitVec, view::BitView};
-use hound::WavReader;
 
 /// Distance away from zero to consider a crossing.
 /// This is used to reduce the impact of noise on the signal.
@@ -25,12 +24,15 @@ enum Pulse {
     One,
 }
 
-pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Result<Vec<BitVec<u8, Msb0>>> {
-    let spec = reader.spec();
+pub struct Spec {
+    sample_rate: u32,
+    channels: u16,
+}
 
+pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
     let mut intersections = Vec::new();
     let mut last = (0_i32, 0_usize);
-    for (i, sample) in reader.samples::<i32>().map(|x| x.unwrap()).enumerate() {
+    for (i, sample) in samples.into_iter().enumerate() {
         if i % spec.channels as usize != 0 {
             continue;
         }
@@ -39,7 +41,7 @@ pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Result<Vec<BitVec<u8, 
             if last.0.signum() != sample.signum() && last.0.signum() == -1 {
                 intersections.push(i);
             }
-            last = (sample, i);
+            last = (*sample, i);
         }
     }
 
@@ -65,8 +67,6 @@ pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Result<Vec<BitVec<u8, 
         sections.push(dat);
     }
 
-    println!("[I] Found {} sections", sections.len());
-
     let mut raw_sections = Vec::new();
     let mut dat = BitVec::<u8, Msb0>::new();
     for section in sections.iter_mut() {
@@ -75,7 +75,7 @@ pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Result<Vec<BitVec<u8, 
             match pulse {
                 Pulse::Zero => dat.push(false),
                 Pulse::One => dat.push(true),
-                Pulse::Start if active => assert!(dat.len() % 8 == 0),
+                Pulse::Start if active => ensure!(dat.len() % 8 == 0, "Invalid start pulse"),
                 Pulse::Start => dat.push(false),
             }
 
@@ -88,10 +88,19 @@ pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Result<Vec<BitVec<u8, 
             }
         }
 
-        assert!(active, "Didn't find start sequence");
+        ensure!(active, "Didn't find start sequence");
         raw_sections.push(dat);
         dat = Default::default();
     }
 
     Ok(raw_sections)
+}
+
+impl From<hound::WavSpec> for Spec {
+    fn from(spec: hound::WavSpec) -> Self {
+        Self {
+            sample_rate: spec.sample_rate,
+            channels: spec.channels,
+        }
+    }
 }

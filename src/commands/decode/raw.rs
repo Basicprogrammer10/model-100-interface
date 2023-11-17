@@ -9,7 +9,7 @@ use crate::{
 
 pub fn decode(samples: &[i32], spec: Spec, args: Decode) -> Result<()> {
     let bin = cassette::decode(samples, spec)?;
-    println!("[I] Found {} sections", bin.len());
+    println!(" └─ Found {} sections", bin.len());
 
     let old_name = args.output.file_name().unwrap().to_string_lossy();
     let (prefix, ext) = old_name.rsplit_once('.').unwrap_or((old_name.as_ref(), ""));

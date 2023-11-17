@@ -6,6 +6,7 @@ mod args;
 mod cassette;
 mod commands;
 mod misc;
+mod parser;
 
 fn main() -> Result<()> {
     let args = args::Args::parse();

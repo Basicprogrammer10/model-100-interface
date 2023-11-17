@@ -6,6 +6,7 @@ use crate::{
 };
 
 mod raw;
+mod text;
 
 pub fn decode(args: Decode) -> Result<()> {
     println!(
@@ -17,7 +18,7 @@ pub fn decode(args: Decode) -> Result<()> {
 
     let reader = hound::WavReader::open(&args.input)?;
     println!(
-        "[I] {} channel{}, {} Hz, {} bit{}",
+        " ├─ {} channel{}, {} Hz, {} bit{}",
         reader.spec().channels,
         plural(reader.spec().channels),
         reader.spec().sample_rate,
@@ -29,12 +30,11 @@ pub fn decode(args: Decode) -> Result<()> {
     let samples = reader
         .into_samples()
         .collect::<Result<Vec<i32>, hound::Error>>()?;
-    println!("[I] {} samples", samples.len());
 
-    match args.format {
-        args::Format::Raw => raw::decode(&samples, spec, args)?,
-        args::Format::Text => unimplemented!(),
-    }
+    (match args.format {
+        args::Format::Raw => raw::decode,
+        args::Format::Text => text::decode,
+    })(&samples, spec, args)?;
 
     println!("[*] Done!");
     Ok(())

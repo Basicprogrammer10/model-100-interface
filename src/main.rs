@@ -1,9 +1,15 @@
-use std::fs;
+use std::{fs, ops::Range};
 
-use bitvec::{array::BitArray, bitarr, order::Msb0, vec::BitVec};
+use bitvec::{order::Msb0, vec::BitVec, view::BitView};
 use hound::{self, WavReader};
 
 const CROSS_THRESHOLD: f32 = 0.1;
+const PULSE_ONE: Range<f32> = (15.0 / 44100.0)..(20.0 / 44100.0);
+const PULSE_ZERO: Range<f32> = (35.0 / 44100.0)..(39.0 / 44100.0);
+const PULSE_START: Range<f32> = (41.0 / 44100.0)..(46.0 / 44100.0);
+const PULSE_END: f32 = 20000.0 / 44100.0;
+
+const START_SEQUENCE: u8 = 0x7F;
 const INT_CROSS_THRESHOLD: i32 = (CROSS_THRESHOLD * i16::MAX as f32) as i32;
 
 #[derive(Debug)]
@@ -14,7 +20,7 @@ enum Pulse {
 }
 
 fn main() {
-    let mut reader = WavReader::open("test.wav").unwrap();
+    let mut reader = WavReader::open(r"C:\Users\turtl\Downloads\programs.wav").unwrap();
     let spec = reader.spec();
 
     let mut intersections = Vec::new();
@@ -34,16 +40,15 @@ fn main() {
 
     let mut sections = Vec::new();
     let mut dat = Vec::new();
-    // TODO: These are tied to the sample rate...
     for i in 0..intersections.len() - 1 {
-        let diff = intersections[i + 1] - intersections[i];
-        if (15..20).contains(&diff) {
+        let diff = (intersections[i + 1] - intersections[i]) as f32 / spec.sample_rate as f32;
+        if PULSE_ONE.contains(&diff) {
             dat.push(Pulse::One);
-        } else if (35..39).contains(&diff) {
+        } else if PULSE_ZERO.contains(&diff) {
             dat.push(Pulse::Zero);
-        } else if (41..46).contains(&diff) {
+        } else if PULSE_START.contains(&diff) {
             dat.push(Pulse::Start);
-        } else if diff > 30000 {
+        } else if diff > PULSE_END {
             sections.push(dat);
             dat = Default::default();
         } else {
@@ -69,10 +74,10 @@ fn main() {
                 Pulse::Start => dat.push(false),
             }
 
-            // If data equals [0, 1, 1, 1, 1, 1, 1, 1] then active = true
-            const START_SEQUENCE: BitArray<[u8; 1], Msb0> =
-                bitarr![const u8, Msb0; 0, 1, 1, 1, 1, 1, 1, 1];
-            if !active && dat.len() >= 8 && &dat[dat.len() - 8..] == &START_SEQUENCE {
+            if !active
+                && dat.len() >= 8
+                && &dat[dat.len() - 8..] == START_SEQUENCE.view_bits::<Msb0>()
+            {
                 active = true;
                 dat.clear();
             }
@@ -83,6 +88,7 @@ fn main() {
         dat = Default::default();
     }
 
+    let _ = fs::create_dir("out");
     for (i, section) in raw_sections.iter().enumerate() {
         fs::write(format!("out/section-{i}.bin"), section.as_raw_slice()).unwrap();
     }

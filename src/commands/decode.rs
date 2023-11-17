@@ -1,22 +1,16 @@
 use std::{
     path::Path,
-    sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, Barrier,
-    },
+    sync::{Arc, Barrier},
 };
 
 use anyhow::{Context, Result};
-use cpal::{
-    traits::{DeviceTrait, HostTrait, StreamTrait},
-    StreamInstant,
-};
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use hound::WavSpec;
 use parking_lot::Mutex;
 
 use crate::{
     args::{self, Decode},
-    cassette::{CROSS_THRESHOLD, PULSE_END},
+    cassette::CROSS_THRESHOLD,
     formats::{raw, text},
     misc::{audio_dev, plural},
 };

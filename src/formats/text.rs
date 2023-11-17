@@ -72,11 +72,13 @@ impl<'a> TextSection<'a> {
 
         let end_pos = bin
             .iter()
-            .take(0x100)
+            .skip(0x1)
+            .take(0xFF)
             .rposition(|&x| x != 0x1A)
-            .unwrap_or(0x100);
+            .unwrap_or(0xFF);
         ensure!(end_pos > 0, "Invalid end position");
-        let data = &bin[0x1..=end_pos];
+        let end = bin[end_pos + 3] != 0xD1;
+        let data = &bin[0x1..=end_pos + if end { 0 } else { 2 }];
 
         Ok(TextSection { data })
     }

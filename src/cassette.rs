@@ -32,7 +32,7 @@ pub struct Spec {
 pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
     let mut intersections = Vec::new();
     let mut last = (0_i32, 0_usize);
-    for (i, sample) in samples.into_iter().enumerate() {
+    for (i, sample) in samples.iter().enumerate() {
         if i % spec.channels as usize != 0 {
             continue;
         }
@@ -81,7 +81,7 @@ pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
 
             if !active
                 && dat.len() >= 8
-                && &dat[dat.len() - 8..] == START_SEQUENCE.view_bits::<Msb0>()
+                && dat[dat.len() - 8..] == START_SEQUENCE.view_bits::<Msb0>()
             {
                 active = true;
                 dat.clear();

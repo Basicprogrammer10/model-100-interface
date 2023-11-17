@@ -32,7 +32,7 @@ fn decode_file(args: Decode) -> Result<()> {
     );
 
     let input = Path::new(&args.input);
-    let reader = hound::WavReader::open(&input)?;
+    let reader = hound::WavReader::open(input)?;
     println!(
         " ├─ {} channel{}, {} Hz, {} bit{}",
         reader.spec().channels,
@@ -129,7 +129,7 @@ fn decode_audio(args: Decode) -> Result<()> {
     drop(stream);
 
     let mut wav_writer = hound::WavWriter::create(
-        &"debug.wav",
+        "debug.wav",
         WavSpec {
             channels: config.clone().channels(),
             sample_rate: config.sample_rate().0,

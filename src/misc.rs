@@ -14,7 +14,7 @@ pub fn audio_dev(mut devices: InputDevices<Devices>, search: &str) -> Result<Dev
     let mut best = devices.next().context("No audio devices")?;
     let mut best_similarity = 0.0;
 
-    for device in devices.into_iter() {
+    for device in devices {
         let name = device.name()?;
         let similarity = strsim::sorensen_dice(&name, search);
         if similarity > best_similarity {

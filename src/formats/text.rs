@@ -16,13 +16,13 @@ pub fn decode(samples: &[i32], spec: Spec, args: Decode) -> Result<()> {
     println!(" └─ Found {} sections", bin.len());
 
     println!("[*] Parsing file");
-    let header = TextHeader::parse(&bin[0].as_raw_slice())?;
+    let header = TextHeader::parse(bin[0].as_raw_slice())?;
     println!(" └─ File name: {}", header.name());
 
     let mut sections = Vec::new();
-    for i in 1..bin.len() {
+    for (i, e) in bin.iter().enumerate().skip(1) {
         let section =
-            TextSection::parse(&bin[i].as_raw_slice()).with_context(|| format!("Section {i}"))?;
+            TextSection::parse(e.as_raw_slice()).with_context(|| format!("Section {i}"))?;
         sections.push(section);
     }
 

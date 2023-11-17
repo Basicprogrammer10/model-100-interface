@@ -1,5 +1,6 @@
 use std::{fs::File, io::BufReader, ops::Range};
 
+use anyhow::{bail, Result};
 use bitvec::{order::Msb0, vec::BitVec, view::BitView};
 use hound::WavReader;
 
@@ -24,7 +25,7 @@ enum Pulse {
     One,
 }
 
-pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Vec<BitVec<u8, Msb0>> {
+pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Result<Vec<BitVec<u8, Msb0>>> {
     let spec = reader.spec();
 
     let mut intersections = Vec::new();
@@ -56,7 +57,7 @@ pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Vec<BitVec<u8, Msb0>> 
             sections.push(dat);
             dat = Default::default();
         } else {
-            panic!("Invalid pulse length: {}", diff);
+            bail!("Invalid pulse length: {}", diff);
         }
     }
 
@@ -92,5 +93,5 @@ pub fn decode(reader: &mut WavReader<BufReader<File>>) -> Vec<BitVec<u8, Msb0>> 
         dat = Default::default();
     }
 
-    raw_sections
+    Ok(raw_sections)
 }

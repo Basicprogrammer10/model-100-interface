@@ -1,3 +1,4 @@
+use anyhow::Result;
 use args::Command;
 use clap::Parser;
 
@@ -6,10 +7,12 @@ mod cassette;
 mod commands;
 mod misc;
 
-fn main() {
+fn main() -> Result<()> {
     let args = args::Args::parse();
 
     match args.subcommand {
-        Command::Decode(decode) => commands::decode::decode(decode),
+        Command::Decode(decode) => commands::decode::decode(decode)?,
     }
+
+    Ok(())
 }

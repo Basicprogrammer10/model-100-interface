@@ -2,11 +2,9 @@ use anyhow::Result;
 
 use crate::{
     args::{self, Decode},
+    formats::{raw, text},
     misc::plural,
 };
-
-mod raw;
-mod text;
 
 pub fn decode(args: Decode) -> Result<()> {
     println!(

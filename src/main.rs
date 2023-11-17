@@ -5,6 +5,7 @@ use clap::Parser;
 mod args;
 mod cassette;
 mod commands;
+mod formats;
 mod misc;
 mod parser;
 

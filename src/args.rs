@@ -22,10 +22,16 @@ pub enum Command {
 
 #[derive(Parser)]
 pub struct Decode {
+    /// The format of the file to decode.
     #[arg(value_enum)]
     pub format: Format,
-    pub input: PathBuf,
+    /// The file or audio device to decode from.
+    pub input: String,
+    /// The file to write the output to.
     pub output: PathBuf,
+    /// Weather the audio device should be used as input.
+    #[arg(short, long)]
+    pub input_audio: bool,
 }
 
 #[derive(ValueEnum, Clone, Copy)]

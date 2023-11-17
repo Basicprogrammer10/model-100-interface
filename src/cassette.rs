@@ -5,13 +5,13 @@ use bitvec::{order::Msb0, vec::BitVec, view::BitView};
 
 /// Distance away from zero to consider a crossing.
 /// This is used to reduce the impact of noise on the signal.
-const CROSS_THRESHOLD: f32 = 0.1;
+pub const CROSS_THRESHOLD: f32 = 0.1;
 
 // The length of each pulse type in seconds.
-const PULSE_ONE: Range<f32> = (15.0 / 44100.0)..(20.0 / 44100.0);
-const PULSE_ZERO: Range<f32> = (35.0 / 44100.0)..(39.0 / 44100.0);
-const PULSE_START: Range<f32> = (41.0 / 44100.0)..(46.0 / 44100.0);
-const PULSE_END: f32 = 20000.0 / 44100.0;
+pub const PULSE_ONE: Range<f32> = (15.0 / 44100.0)..(20.0 / 44100.0);
+pub const PULSE_ZERO: Range<f32> = (35.0 / 44100.0)..(39.0 / 44100.0);
+pub const PULSE_START: Range<f32> = (41.0 / 44100.0)..(46.0 / 44100.0);
+pub const PULSE_END: f32 = 20000.0 / 44100.0;
 
 /// The start sequence is 01111111.
 const START_SEQUENCE: u8 = 0x7F;
@@ -101,6 +101,15 @@ impl From<hound::WavSpec> for Spec {
         Self {
             sample_rate: spec.sample_rate,
             channels: spec.channels,
+        }
+    }
+}
+
+impl From<cpal::SupportedStreamConfig> for Spec {
+    fn from(spec: cpal::SupportedStreamConfig) -> Self {
+        Self {
+            sample_rate: spec.sample_rate().0,
+            channels: spec.channels(),
         }
     }
 }

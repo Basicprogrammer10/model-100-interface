@@ -59,7 +59,6 @@ fn decode_file(args: Decode) -> Result<()> {
 fn decode_audio(args: Decode) -> Result<()> {
     let host = cpal::default_host();
     let device = audio_dev(host.input_devices()?, &args.input)?;
-    println!("[*] Using audio device `{}`", device.name()?);
     let mut config_range = device.supported_input_configs()?;
     let config = config_range
         .next()
@@ -67,6 +66,12 @@ fn decode_audio(args: Decode) -> Result<()> {
         .with_max_sample_rate();
     let sample_rate = config.sample_rate().0;
     let spec = config.clone().into();
+
+    println!(
+        "[*] Using audio device `{} ({}Hz)`",
+        device.name()?,
+        sample_rate
+    );
 
     struct State {
         samples: Mutex<Vec<i32>>,
@@ -85,7 +90,7 @@ fn decode_audio(args: Decode) -> Result<()> {
         move |data: &[f32], info: &cpal::InputCallbackInfo| {
             let mut samples = stream_state.samples.lock();
             for sample in data {
-                samples.push((sample * i32::MAX as f32) as i32);
+                samples.push((sample * i16::MAX as f32) as i32);
 
                 if let Some(last_cross) = last_cross {
                     if info

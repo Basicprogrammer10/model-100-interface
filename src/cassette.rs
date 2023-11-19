@@ -15,7 +15,6 @@ pub const PULSE_END: f32 = 20000.0 / 44100.0;
 
 /// The start sequence is 01111111.
 const START_SEQUENCE: u8 = 0x7F;
-const INT_CROSS_THRESHOLD: i32 = (CROSS_THRESHOLD * i16::MAX as f32) as i32;
 
 #[derive(Debug)]
 enum Pulse {
@@ -25,11 +24,15 @@ enum Pulse {
 }
 
 pub struct Spec {
-    sample_rate: u32,
-    channels: u16,
+    pub sample_rate: u32,
+    pub channels: u16,
+    pub bits_per_sample: u16,
 }
 
 pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
+    let max_value = ((1_u64 << spec.bits_per_sample) - 1) as u32;
+    let cross_threshold = (CROSS_THRESHOLD * max_value as f32) as i32;
+
     let mut intersections = Vec::new();
     let mut last = (0_i32, 0_usize);
     for (i, sample) in samples.iter().enumerate() {
@@ -37,7 +40,7 @@ pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
             continue;
         }
 
-        if sample.abs() > INT_CROSS_THRESHOLD {
+        if sample.abs() > cross_threshold {
             if last.0.signum() != sample.signum() && last.0.signum() == -1 {
                 intersections.push(i);
             }
@@ -59,7 +62,7 @@ pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
             sections.push(dat);
             dat = Default::default();
         } else {
-            bail!("Invalid pulse length: {}", diff);
+            bail!("Invalid pulse length: {diff}s");
         }
     }
 
@@ -101,6 +104,7 @@ impl From<hound::WavSpec> for Spec {
         Self {
             sample_rate: spec.sample_rate,
             channels: spec.channels,
+            bits_per_sample: spec.bits_per_sample,
         }
     }
 }
@@ -110,6 +114,7 @@ impl From<cpal::SupportedStreamConfig> for Spec {
         Self {
             sample_rate: spec.sample_rate().0,
             channels: spec.channels(),
+            bits_per_sample: spec.sample_format().sample_size() as u16,
         }
     }
 }

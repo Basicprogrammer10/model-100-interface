@@ -3,6 +3,7 @@ pub struct BinParser<'a> {
     idx: usize,
 }
 
+#[allow(dead_code)]
 impl<'a> BinParser<'a> {
     pub fn new(raw: &'a [u8]) -> Self {
         Self { raw, idx: 0 }

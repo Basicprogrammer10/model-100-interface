@@ -1,7 +1,9 @@
-use std::ops::Range;
+use std::{f32::consts::PI, iter, ops::Range};
 
 use anyhow::{bail, ensure, Result};
 use bitvec::{order::Msb0, vec::BitVec, view::BitView};
+
+use crate::join_arrays;
 
 /// Distance away from zero to consider a crossing.
 /// This is used to reduce the impact of noise on the signal.
@@ -30,7 +32,7 @@ pub struct Spec {
 }
 
 pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
-    let max_value = ((1_u64 << spec.bits_per_sample) - 1) as u32;
+    let max_value = ((1_u64 << spec.bits_per_sample/* - 1 */) - 1) as u32;
     let cross_threshold = (CROSS_THRESHOLD * max_value as f32) as i32;
 
     let mut intersections = Vec::new();
@@ -99,6 +101,45 @@ pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
     Ok(raw_sections)
 }
 
+// 0-.7
+pub fn encode(data: &[&[u8]], spec: &Spec) -> Result<Vec<i32>> {
+    let header_data = join_arrays!([0x55; 255], [0x7F]);
+    let header = encode_segment(&header_data, spec)?;
+
+    let mut out = Vec::new();
+    for (i, dat) in data.iter().enumerate() {
+        out.extend(header.iter());
+        out.extend(encode_segment(dat, spec)?);
+        if i != data.len() - 1 {
+            out.extend(iter::repeat(0).take((spec.sample_rate as f32 * 0.75) as usize));
+        }
+    }
+
+    Ok(out)
+}
+
+fn encode_segment(data: &[u8], spec: &Spec) -> Result<Vec<i32>> {
+    let max_value = ((1_u64 << spec.bits_per_sample - 1) - 1) as f32;
+
+    // 0 => 2680 Hz, 1 => 1320 Hz
+    let freq = |x: f32| (spec.sample_rate as f32 / x).round() as u32;
+    let [samples_0, samples_1] = [freq(1320.0), freq(2680.0)];
+
+    let data = data.view_bits::<Msb0>();
+    let mut out = Vec::new();
+
+    for bit in data {
+        let samples = if *bit { samples_1 } else { samples_0 };
+        let freq = if *bit { 2680.0 } else { 1320.0 };
+        for i in 0..samples {
+            let val = (i as f32 * freq * 2.0 * PI / spec.sample_rate as f32).sin();
+            out.push((val * max_value) as i32);
+        }
+    }
+
+    Ok(out)
+}
+
 impl From<hound::WavSpec> for Spec {
     fn from(spec: hound::WavSpec) -> Self {
         Self {
@@ -116,5 +157,39 @@ impl From<cpal::SupportedStreamConfig> for Spec {
             channels: spec.channels(),
             bits_per_sample: spec.sample_format().sample_size() as u16,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_encode_segment() {
+        use super::*;
+
+        let spec = Spec {
+            sample_rate: 44100,
+            channels: 1,
+            bits_per_sample: 16,
+        };
+
+        let data: &[&[u8]] = &[b"Hello, world!"];
+        let encoded = encode(data, &spec).unwrap();
+
+        let mut wav = hound::WavWriter::create(
+            "output-test.wav",
+            hound::WavSpec {
+                channels: 1,
+                sample_rate: 44100,
+                bits_per_sample: 16,
+                sample_format: hound::SampleFormat::Int,
+            },
+        )
+        .unwrap();
+
+        for sample in encoded {
+            wav.write_sample(sample).unwrap();
+        }
+
+        wav.finalize().unwrap();
     }
 }

@@ -17,12 +17,14 @@ pub fn decode(samples: &[i32], spec: Spec, args: Decode) -> Result<()> {
 
     println!("[*] Parsing file");
     let header = TextHeader::parse(bin[0].as_raw_slice())?;
+    dbg!(header.checksum);
     println!(" └─ File name: {}", header.name());
 
     let mut sections = Vec::new();
     for (i, e) in bin.iter().enumerate().skip(1) {
         let section =
             TextSection::parse(e.as_raw_slice()).with_context(|| format!("Section {i}"))?;
+        dbg!(section.checksum);
         sections.push(section);
     }
 
@@ -41,10 +43,12 @@ pub fn decode(samples: &[i32], spec: Spec, args: Decode) -> Result<()> {
 struct TextHeader {
     name: [char; 6],
     name_len: u8,
+    checksum: u8,
 }
 
 struct TextSection<'a> {
     data: &'a [u8],
+    checksum: u8,
 }
 
 impl TextHeader {
@@ -56,7 +60,13 @@ impl TextHeader {
         let name = [0; 6].map(|_| parser.read_u8() as char);
         let name_len = name.iter().position(|&c| c == ' ').unwrap_or(6) as u8;
 
-        Ok(TextHeader { name, name_len })
+        let checksum = checksum(&bin[0x01..=0x11]);
+
+        Ok(TextHeader {
+            name,
+            name_len,
+            checksum,
+        })
     }
 
     fn name(&self) -> String {
@@ -80,7 +90,12 @@ impl<'a> TextSection<'a> {
 
         ensure!(end_pos > 0, "Invalid end position");
         let data = &bin[0x1..=end_pos];
+        let checksum = checksum(&bin[0x01..=0x101]);
 
-        Ok(TextSection { data })
+        Ok(TextSection { data, checksum })
     }
+}
+
+fn checksum(data: &[u8]) -> u8 {
+    data.iter().fold(0_u8, |acc, &x| acc.wrapping_add(x))
 }

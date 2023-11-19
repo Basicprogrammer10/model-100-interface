@@ -31,7 +31,11 @@ pub struct Decode {
     pub output: PathBuf,
     /// Weather the audio device should be used as input.
     #[arg(short, long)]
-    pub input_audio: bool,
+    pub audio_input: bool,
+    /// Weather checksums should be ignored.
+    /// Useful if the file is corrupted, but you still want to try to decode it.
+    #[arg(short, long)]
+    pub ignore_checksums: bool,
 }
 
 #[derive(ValueEnum, Clone, Copy)]

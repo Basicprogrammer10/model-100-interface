@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub fn decode(args: Decode) -> Result<()> {
-    if args.input_audio {
+    if args.audio_input {
         decode_audio(args)
     } else {
         decode_file(args)

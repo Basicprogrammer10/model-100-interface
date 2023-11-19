@@ -3,7 +3,7 @@ use std::{
     io::{BufWriter, Write},
 };
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 
 use crate::{
     args::Decode,
@@ -17,14 +17,19 @@ pub fn decode(samples: &[i32], spec: Spec, args: Decode) -> Result<()> {
 
     println!("[*] Parsing file");
     let header = TextHeader::parse(bin[0].as_raw_slice())?;
-    dbg!(header.checksum);
+    if header.checksum != 0x00 && !args.ignore_checksums {
+        bail!("Invalid header checksum");
+    }
+
     println!(" └─ File name: {}", header.name());
 
     let mut sections = Vec::new();
     for (i, e) in bin.iter().enumerate().skip(1) {
         let section =
             TextSection::parse(e.as_raw_slice()).with_context(|| format!("Section {i}"))?;
-        dbg!(section.checksum);
+        if section.checksum != 0x00 && !args.ignore_checksums {
+            bail!("Section {i} has an invalid checksum");
+        }
         sections.push(section);
     }
 

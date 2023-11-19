@@ -17,7 +17,7 @@ The first byte (0x00) is the type of data contained in the block, below is a tab
 | Byte | File | Description        |
 | ---- | ---- | ------------------ |
 | 0x9C | .DO  | Document           |
-| 0xDO | .CO  | Compiled Software? |
+| 0xD0 | .CO  | Compiled Software? |
 | 0xD3 | .BA  | BASIC Program      |
 
 The next 6 bytes are the file name, if the name is shorter than 6 bytes, the remaining bytes are padded with spaces.

@@ -15,6 +15,13 @@ impl<'a> BinParser<'a> {
         val
     }
 
+    pub fn read_array<const N: usize>(&mut self) -> [u8; N] {
+        let mut out = [0; N];
+        out.copy_from_slice(&self.raw[self.idx..self.idx + N]);
+        self.idx += N;
+        out
+    }
+
     pub fn skip(&mut self, n: usize) {
         self.idx += n;
     }

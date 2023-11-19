@@ -103,7 +103,7 @@ pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
 
 // 0-.7
 pub fn encode(data: &[&[u8]], spec: &Spec) -> Result<Vec<i32>> {
-    let header_data = join_arrays!([0x55; 255], [0x7F]);
+    let header_data = join_arrays!([0x55; 512], [0x7F]);
     let header = encode_segment(&header_data, spec)?;
 
     let mut out = Vec::new();
@@ -111,7 +111,7 @@ pub fn encode(data: &[&[u8]], spec: &Spec) -> Result<Vec<i32>> {
         out.extend(header.iter());
         out.extend(encode_segment(dat, spec)?);
         if i != data.len() - 1 {
-            out.extend(iter::repeat(0).take((spec.sample_rate as f32 * 0.75) as usize));
+            out.extend(iter::repeat(0).take((spec.sample_rate as f32 * 0.6) as usize));
         }
     }
 
@@ -157,39 +157,5 @@ impl From<cpal::SupportedStreamConfig> for Spec {
             channels: spec.channels(),
             bits_per_sample: spec.sample_format().sample_size() as u16,
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test_encode_segment() {
-        use super::*;
-
-        let spec = Spec {
-            sample_rate: 44100,
-            channels: 1,
-            bits_per_sample: 16,
-        };
-
-        let data: &[&[u8]] = &[b"Hello, world!"];
-        let encoded = encode(data, &spec).unwrap();
-
-        let mut wav = hound::WavWriter::create(
-            "output-test.wav",
-            hound::WavSpec {
-                channels: 1,
-                sample_rate: 44100,
-                bits_per_sample: 16,
-                sample_format: hound::SampleFormat::Int,
-            },
-        )
-        .unwrap();
-
-        for sample in encoded {
-            wav.write_sample(sample).unwrap();
-        }
-
-        wav.finalize().unwrap();
     }
 }

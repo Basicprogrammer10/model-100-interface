@@ -119,7 +119,7 @@ pub fn encode(data: &[&[u8]], spec: &Spec) -> Result<Vec<i32>> {
 }
 
 fn encode_segment(data: &[u8], spec: &Spec) -> Result<Vec<i32>> {
-    let max_value = ((1_u64 << spec.bits_per_sample - 1) - 1) as f32;
+    let max_value = ((1_u64 << (spec.bits_per_sample - 1)) - 1) as f32;
 
     // 0 => 2680 Hz, 1 => 1320 Hz
     let freq = |x: f32| (spec.sample_rate as f32 / x).round() as u32;

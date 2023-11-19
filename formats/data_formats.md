@@ -8,17 +8,17 @@ After decoding the binary data from the casette audio, there will be two or more
 The first will always be a header block and the remaining will all be data blocks.
 Each block should have 256 0x55 (0b01010101) bytes, then a sync byte of 0x7F (0b011111111).
 This should be striped out prior to decoding, and will be omitted in the remainder of this document.
-If you happen to use the [ImHex](https://imhex.werwolv.net) hex editor, you can use the provides hexpat pattern files in this directory (formats).
+If you happen to use the [ImHex](https://imhex.werwolv.net) hex editor, you can use the provided hexpat pattern files in this directory ([data.hexpat](data.hexpat) and [header.hexpat](header.hexpat)).
 
 ![Hex editor view of header block](https://github.com/Basicprogrammer10/trs80-interface/assets/50306817/620a3604-00ef-4278-ac3a-406b8c6c3fc4)
 
 The first byte (0x00) is the type of data contained in the block, below is a table of possible values.
 
-| Byte | File |
-| ---- | ---- |
-| 0x9C | .DO  |
-| 0xDO | .CO  |
-| 0xD3 | .BA  |
+| Byte | File | Description        |
+| ---- | ---- | ------------------ |
+| 0x9C | .DO  | Document           |
+| 0xDO | .CO  | Compiled Software? |
+| 0xD3 | .BA  | BASIC Program      |
 
 The next 6 bytes are the file name, if the name is shorter than 6 bytes, the remaining bytes are padded with spaces.
 
@@ -37,7 +37,9 @@ data[0x01..=0x11].iter().fold(0_u8, |acc, &x| acc.wrapping_add(x))
 Finally, at the end there should be 14 0x00 bytes.
 This is true for every block, not just the header block.
 
-![Hex editor of a data block](https://github.com/Basicprogrammer10/trs80-interface/assets/50306817/3c025531-7403-47d3-b6fa-42a74d86daaa)
+### Text Data
+
+![Hex editor of a text data block](https://github.com/Basicprogrammer10/trs80-interface/assets/50306817/3c025531-7403-47d3-b6fa-42a74d86daaa)
 
 Now onto the data blocks!
 There are a bit simpler.

@@ -103,7 +103,7 @@ pub fn decode(samples: &[i32], spec: Spec) -> Result<Vec<BitVec<u8, Msb0>>> {
 
 // 0-.7
 pub fn encode(data: &[&[u8]], spec: &Spec) -> Result<Vec<i32>> {
-    let header_data = join_arrays!([0x55; 512], [0x7F]);
+    let header_data = join_arrays!([0x55; 256], [0x7F]);
     let header = encode_segment(&header_data, spec)?;
 
     let mut out = Vec::new();
@@ -131,9 +131,10 @@ fn encode_segment(data: &[u8], spec: &Spec) -> Result<Vec<i32>> {
     for bit in data {
         let samples = if *bit { samples_1 } else { samples_0 };
         let freq = if *bit { 2680.0 } else { 1320.0 };
+        let mult = if *bit { 0.8 } else { 1.0 };
         for i in 0..samples {
             let val = (i as f32 * freq * 2.0 * PI / spec.sample_rate as f32).sin();
-            out.push((val * max_value) as i32);
+            out.push((val * max_value * mult) as i32);
         }
     }
 

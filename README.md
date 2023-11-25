@@ -1,4 +1,6 @@
-# trs80-interface
+<img src="https://github.com/Basicprogrammer10/model-100-interface/assets/50306817/8257fc21-7210-4df2-bfb6-6bf892ecc812" align="right" width="30%"></img>
+
+# Model 100 Interface
 
 Encoding and decoding of casette data from TRS-80 model 100 systems.
 
@@ -16,3 +18,4 @@ I didn't find much information about this online, what a surprise I guess.
   - [ ] Text
 - [x] CLI
   - [ ] Cleanup
+- [ ] Documentation
